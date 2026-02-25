@@ -1,0 +1,2 @@
+cargo:rerun-if-changed=src/build.rs
+cargo:rustc-env=SEP=/

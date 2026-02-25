@@ -26,4 +26,5 @@ axum = "0.7"
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 
-# Browser control (placeholder - will add playwright in Phase 2)
+# Browser control - Playwright
+playwright = "0.0.20"
