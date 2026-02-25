@@ -202,15 +202,33 @@ async fn act_handler(
         ));
     }
     
-    // TODO: Real implementation:
-    // 1. Find element by ID in semantic tree
-    // 2. Get CSS selector
-    // 3. Execute CDP action
-    // 4. Wait for ready
-    // 5. Return new state
+    // Execute action via CDP (simplified)
+    let cdp = state.cdp_client.read();
+    let result = match action_type.unwrap() {
+        ActionType::Click => {
+            let selector = format!("[data-id=\"{}\"]", req.target_id);
+            cdp.click(&selector).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            "clicked"
+        }
+        ActionType::Type => {
+            let selector = format!("[data-id=\"{}\"]", req.target_id);
+            cdp.type_text(&selector, &req.value).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            "typed"
+        }
+        ActionType::Scroll => {
+            cdp.evaluate(&format!("window.scrollBy(0, {})", req.value)).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            "scrolled"
+        }
+        ActionType::Wait | ActionType::Hover | ActionType::Select => {
+            "not implemented"
+        }
+    };
     
-    // Placeholder response
+    // Notify inspector of DOM change
     let inspector = state.inspector.read();
+    inspector.dom_mutated();
+    inspector.mark_ready();
+    
     let inspector_state = inspector.get_state();
     
     let response = ActResponse {
@@ -266,17 +284,38 @@ async fn browser_start_handler(
     // 2. Launch browser
     // 3. Set up network/DOM event listeners
     
-    // Mark as running (placeholder)
-    *state.is_running.write() = true;
+    // Configure and launch browser
+    let config = crate::cdp::BrowserConfig {
+        headless: req.headless,
+        user_data_dir: req.user_data_dir.clone(),
+        browser_path: None,
+        port: 9222,
+    };
     
-    // Reset inspector
-    state.inspector.read().reset();
+    // Create and launch CDP client
+    let mut cdp = crate::cdp::CdpClient::new(config);
+    let launch_result = cdp.launch();
     
-    info!("Browser started (placeholder)");
-    Ok(Json(serde_json::json!({
-        "success": true,
-        "message": "Browser started"
-    })))
+    match launch_result {
+        Ok(_) => {
+            // Update state
+            *state.cdp_client.write() = cdp;
+            *state.is_running.write() = true;
+            
+            // Reset inspector
+            state.inspector.read().reset();
+            
+            info!("Browser started successfully");
+            Ok(Json(serde_json::json!({
+                "success": true,
+                "message": "Browser started"
+            })))
+        }
+        Err(e) => {
+            error!("Failed to start browser: {}", e);
+            Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to start browser: {}", e)))
+        }
+    }
 }
 
 /// Browser stop handler
