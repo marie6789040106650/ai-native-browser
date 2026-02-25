@@ -1,0 +1,11 @@
+cargo:rerun-if-changed=permissions
+cargo:PERMISSION_FILES_PATH=/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/tauri-plugin-shell-7e0aab4fdb87709d/out/tauri-plugin-shell-permission-files
+cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
+cargo:GLOBAL_SCOPE_SCHEMA_PATH=/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/tauri-plugin-shell-7e0aab4fdb87709d/out/global-scope.json
+cargo:GLOBAL_API_SCRIPT_PATH=/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-shell-2.3.5/api-iife.js
+cargo:rustc-check-cfg=cfg(mobile)
+cargo:rustc-check-cfg=cfg(desktop)
+cargo:rustc-cfg=desktop
+cargo:rustc-check-cfg=cfg(desktop)
+cargo:rustc-cfg=desktop
+cargo:rustc-check-cfg=cfg(mobile)

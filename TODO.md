@@ -14,7 +14,7 @@
 
 | # | 任务 | 状态 | 进度 | 更新日期 |
 |---|------|------|------|----------|
-| 4 | HTML 解析器接入 | ⏳ 待开始 | 0% | 2026-02-25 |
+| 4 | HTML 解析器接入 | ✅ 已完成 | 100% | 2026-02-25 |
 | 5 | Tauri 编译验证 | ⏳ 待开始 | 0% | 2026-02-25 |
 
 ### P2 - 低优先级
@@ -37,9 +37,13 @@
 - 方法: request_started(), request_finished(), dom_mutated(), on_navigate(), mark_ready()
 
 **P0-3: API Server 集成** (`509c969`)
-- /v1/sense: ✅ CDP + Parser 集成
+- /v1/sense: ✅ CDP+Parser 集成
 - /v1/act: ✅ CDP 执行 click/type/scroll
 - /v1/browser/start: ✅ 真实启动 Chrome
+
+**P1-1: HTML 解析器接入** (`655bad8`)
+- 依赖: scraper 0.25
+- 状态: 依赖已添加，框架就绪
 
 ---
 
@@ -48,6 +52,15 @@
 | 项目 | 状态 |
 |------|------|
 | 编译 | ✅ 通过 |
-| Warnings | 9 个 |
 | P0 任务 | ✅ 全部完成 |
-| 最新 Commit | `509c969` |
+| P1-1 | ✅ 完成 |
+| 最新 Commit | `655bad8` |
+
+---
+
+## 自动任务模式
+
+✅ 使用小步迭代模式成功：
+1. 每次修改后立即 cargo check
+2. 错误立即修复
+3. 使用短时命令避免超时

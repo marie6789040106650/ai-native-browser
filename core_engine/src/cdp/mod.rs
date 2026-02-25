@@ -5,9 +5,9 @@
 
 use anyhow::Result;
 use std::process::{Command, Stdio};
-use std::io::{Read, Write};
+// use std::io::Read; // unused
 use std::sync::Mutex;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::CoreError;
 
@@ -77,7 +77,7 @@ impl CdpClient {
         }
         
         // Launch Chrome
-        let mut child = Command::new(&browser_path)
+        let child = Command::new(&browser_path)
             .args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

@@ -1,5 +1,5 @@
 [workspace]
-members = ["core_engine"]
+members = ["core_engine", "gateway_app"]
 resolver = "2"
 
 [workspace.package]

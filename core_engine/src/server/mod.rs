@@ -203,7 +203,7 @@ async fn act_handler(
     
     // Execute action via CDP (simplified)
     let cdp = state.cdp_client.read();
-    let result = match action_type.unwrap() {
+    let _result = match action_type.unwrap() {
         ActionType::Click => {
             let selector = format!("[data-id=\"{}\"]", req.target_id);
             cdp.click(&selector).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

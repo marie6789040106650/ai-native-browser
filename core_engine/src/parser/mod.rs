@@ -222,7 +222,7 @@ impl SemanticParser {
     }
 
     /// Generate CSS selector for element
-    pub fn generate_selector(&self, element: &RawElement, depth: usize) -> String {
+    pub fn generate_selector(&self, element: &RawElement, _depth: usize) -> String {
         let mut selector = String::new();
         
         // Add ID if available

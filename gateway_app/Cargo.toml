@@ -27,7 +27,7 @@ tracing-subscriber.workspace = true
 anyhow.workspace = true
 
 # Tauri dependencies
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-shell = "2"
 
 # System integration
