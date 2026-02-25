@@ -26,5 +26,5 @@ axum = "0.7"
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 
-# Browser control - Playwright
-playwright = "0.0.20"
+# HTTP client for CDP
+ureq = { version = "2", features = ["json"] }
