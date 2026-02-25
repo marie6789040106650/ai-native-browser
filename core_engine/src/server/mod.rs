@@ -1,6 +1,16 @@
 //! API Server Module
 //! 
 //! Exposes the AI Browser Interface via REST/WebSocket endpoints.
+//! Blueprint 4: ABI Interface Implementation
+//!
+//! Endpoints:
+//! - GET  /health          - Health check
+//! - GET  /v1/sense        - Get semantic page representation
+//! - POST /v1/act          - Perform action on page
+//! - POST /v1/human_bridge - Request human intervention
+//! - POST /v1/browser/start - Start browser
+//! - POST /v1/browser/stop  - Stop browser
+//! - GET  /v1/status       - Get current status
 
 use axum::{
     extract::State,
@@ -15,20 +25,24 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{CoreError, EngineConfig};
 use crate::parser::SemanticNode;
+use crate::inspector::InspectorState;
 
 /// Shared application state
 pub struct AppState {
     pub config: EngineConfig,
     pub parser: RwLock<crate::parser::SemanticParser>,
     pub inspector: RwLock<crate::inspector::TrafficInspector>,
-    // Note: In real implementation, we'd have CDP client here
+    pub cdp_client: RwLock<crate::cdp::CdpClient>,
+    pub is_running: RwLock<bool>,
 }
 
-/// Sense response
+/// ============ Request/Response Types ============
+
+/// Sense response - Blueprint 4.1
 #[derive(Debug, Serialize)]
 pub struct SenseResponse {
     pub status: String,
@@ -37,7 +51,7 @@ pub struct SenseResponse {
     pub semantic_tree: Vec<SemanticNode>,
 }
 
-/// Act request
+/// Act request - Blueprint 4.2
 #[derive(Debug, Deserialize)]
 pub struct ActRequest {
     pub action: String,
@@ -46,20 +60,66 @@ pub struct ActRequest {
     pub value: String,
 }
 
+/// Supported actions
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ActionType {
+    Click,
+    Type,
+    Scroll,
+    Wait,
+    Hover,
+    Select,
+}
+
+impl ActionType {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "click" => Some(ActionType::Click),
+            "type" | "fill" => Some(ActionType::Type),
+            "scroll" => Some(ActionType::Scroll),
+            "wait" => Some(ActionType::Wait),
+            "hover" => Some(ActionType::Hover),
+            "select" => Some(ActionType::Select),
+            _ => None,
+        }
+    }
+}
+
 /// Act response
 #[derive(Debug, Serialize)]
 pub struct ActResponse {
     pub success: bool,
     pub message: String,
-    pub new_state: Option<InspectorState>,
+    pub new_state: Option<InspectorStateResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 /// Inspector state for API responses
 #[derive(Debug, Serialize)]
-pub struct InspectorState {
+pub struct InspectorStateResponse {
     pub active_requests: u32,
     pub is_ready: bool,
 }
+
+/// Browser start request
+#[derive(Debug, Deserialize)]
+pub struct BrowserStartRequest {
+    #[serde(default)]
+    pub headless: bool,
+    #[serde(default)]
+    pub user_data_dir: Option<String>,
+}
+
+/// Status response
+#[derive(Debug, Serialize)]
+pub struct StatusResponse {
+    pub browser_running: bool,
+    pub inspector: InspectorStateResponse,
+    pub url: Option<String>,
+}
+
+// ============ Handlers ============
 
 /// Health check handler
 async fn health_check() -> Json<serde_json::Value> {
@@ -70,85 +130,204 @@ async fn health_check() -> Json<serde_json::Value> {
     }))
 }
 
-/// Sense handler - Get semantic page representation
+/// Sense handler - Blueprint 4.1
+/// GET /v1/sense
+/// Logic: wait_until_ready -> get DOM -> parse -> return
 async fn sense_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SenseResponse>, (StatusCode, String)> {
     info!("sense endpoint called");
     
-    // In real implementation:
-    // 1. Call wait_until_ready on inspector
-    // 2. Get full DOM via CDP
+    // Check browser status
+    let is_running = *state.is_running.read();
+    if !is_running {
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Browser not running. Start with POST /v1/browser/start".to_string(),
+        ));
+    }
+    
+    // Get inspector state
+    let inspector = state.inspector.read();
+    let inspector_state = inspector.get_state();
+    
+    // TODO: In real implementation:
+    // 1. Call wait_until_ready() on inspector
+    // 2. Get full DOM via CDP: cdp_client.content()
     // 3. Parse with semantic parser
     // 4. Return result
     
-    let inspector = state.inspector.read();
-    let _ready_state = inspector.get_state();
-    
     // Placeholder response
     let response = SenseResponse {
-        status: "ready".to_string(),
-        url: "https://example.com".to_string(),
-        page_title: "Example".to_string(),
+        status: if inspector_state.is_ready { "ready" } else { "loading" }.to_string(),
+        url: inspector_state.url.clone().unwrap_or_default(),
+        page_title: inspector_state.title.clone().unwrap_or_default(),
         semantic_tree: vec![],
     };
     
+    info!("sense returned: {} nodes", response.semantic_tree.len());
     Ok(Json(response))
 }
 
-/// Act handler - Perform action on page
+/// Act handler - Blueprint 4.2
+/// POST /v1/act
+/// Logic: find element by ID -> execute CDP action -> wait -> return
 async fn act_handler(
     State(state): State<Arc<AppState>>,
     Json(req): Json<ActRequest>,
 ) -> Result<Json<ActResponse>, (StatusCode, String)> {
-    info!("act endpoint called: action={}, target_id={}", req.action, req.target_id);
+    info!("act endpoint: action={}, target_id={}, value={}", req.action, req.target_id, req.value);
     
-    // In real implementation:
+    // Check browser status
+    let is_running = *state.is_running.read();
+    if !is_running {
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Browser not running".to_string(),
+        ));
+    }
+    
+    // Parse action type
+    let action_type = ActionType::from_str(&req.action);
+    if action_type.is_none() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("Invalid action: {}. Valid: click, type, scroll, wait, hover", req.action),
+        ));
+    }
+    
+    // TODO: Real implementation:
     // 1. Find element by ID in semantic tree
     // 2. Get CSS selector
-    // 3. Execute CDP action (click, type, etc.)
+    // 3. Execute CDP action
     // 4. Wait for ready
     // 5. Return new state
     
+    // Placeholder response
     let inspector = state.inspector.read();
     let inspector_state = inspector.get_state();
     
     let response = ActResponse {
         success: true,
-        message: format!("Action '{}' executed successfully", req.action),
-        new_state: Some(InspectorState {
+        message: format!("Action '{}' executed (placeholder)", req.action),
+        new_state: Some(InspectorStateResponse {
             active_requests: inspector_state.active_requests,
             is_ready: inspector_state.is_ready,
         }),
+        error: None,
     };
     
+    info!("act completed: {}", response.message);
     Ok(Json(response))
 }
 
-/// Human bridge handler - Request human intervention
+/// Human bridge handler - Blueprint 4.3
+/// POST /v1/human_bridge
 async fn human_bridge_handler(
-    State(state): State<Arc<AppState>>,
+    State(_state): State<Arc<AppState>>,
     Json(req): Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    error!("human_bridge called: {:?}", req);
+    warn!("human_bridge called: {:?}", req);
     
-    // In real implementation:
+    // TODO: Real implementation:
     // 1. Signal Tauri to show shadow window
     // 2. Wait for human completion
     // 3. Return success
     
     Ok(Json(serde_json::json!({
         "success": true,
-        "message": "Human intervention requested"
+        "message": "Human intervention requested. Please interact with the browser."
     })))
 }
 
-/// Create the router
+/// Browser start handler
+async fn browser_start_handler(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<BrowserStartRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    info!("browser_start called: headless={}", req.headless);
+    
+    // Check if already running
+    if *state.is_running.read() {
+        return Err((
+            StatusCode::CONFLICT,
+            "Browser already running".to_string(),
+        ));
+    }
+    
+    // TODO: Real implementation:
+    // 1. Configure CDP client with user_data_dir if provided
+    // 2. Launch browser
+    // 3. Set up network/DOM event listeners
+    
+    // Mark as running (placeholder)
+    *state.is_running.write() = true;
+    
+    // Reset inspector
+    state.inspector.read().reset();
+    
+    info!("Browser started (placeholder)");
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "message": "Browser started"
+    })))
+}
+
+/// Browser stop handler
+async fn browser_stop_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    info!("browser_stop called");
+    
+    // Check if running
+    if !*state.is_running.read() {
+        return Err((
+            StatusCode::CONFLICT,
+            "Browser not running".to_string(),
+        ));
+    }
+    
+    // TODO: Real implementation:
+    // 1. Close CDP client
+    // 2. Clean up
+    
+    *state.is_running.write() = false;
+    
+    info!("Browser stopped");
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "message": "Browser stopped"
+    })))
+}
+
+/// Status handler
+async fn status_handler(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let inspector = state.inspector.read();
+    let inspector_state = inspector.get_state();
+    
+    Json(serde_json::json!({
+        "browser_running": *state.is_running.read(),
+        "inspector": {
+            "active_requests": inspector_state.active_requests,
+            "is_ready": inspector_state.is_ready,
+        },
+        "url": inspector_state.url,
+        "title": inspector_state.title,
+    }))
+}
+
+// ============ Router Setup ============
+
+/// Create the router with all endpoints
 pub fn create_router(config: &EngineConfig) -> Router {
     let app_state = Arc::new(AppState {
         config: config.clone(),
         parser: RwLock::new(crate::parser::SemanticParser::default_parser()),
         inspector: RwLock::new(crate::inspector::TrafficInspector::default_inspector()),
+        cdp_client: RwLock::new(crate::cdp::CdpClient::new(crate::cdp::BrowserConfig::default())),
+        is_running: RwLock::new(false),
     });
 
     let cors = CorsLayer::new()
@@ -157,10 +336,16 @@ pub fn create_router(config: &EngineConfig) -> Router {
         .allow_headers(Any);
 
     Router::new()
+        // Health
         .route("/health", get(health_check))
+        // API v1
         .route("/v1/sense", get(sense_handler))
         .route("/v1/act", post(act_handler))
         .route("/v1/human_bridge", post(human_bridge_handler))
+        .route("/v1/browser/start", post(browser_start_handler))
+        .route("/v1/browser/stop", post(browser_stop_handler))
+        .route("/v1/status", get(status_handler))
+        // Layers
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(app_state)
@@ -171,7 +356,18 @@ pub async fn start_server(config: EngineConfig) -> Result<(), CoreError> {
     let addr = SocketAddr::from(([127, 0, 0, 1], config.port));
     let router = create_router(&config);
     
-    info!("Starting API server on {}", addr);
+    info!("===========================================");
+    info!("AI Native Browser API Server");
+    info!("Listening on: http://{}", addr);
+    info!("Endpoints:");
+    info!("  GET  /health           - Health check");
+    info!("  GET  /v1/sense         - Get semantic page");
+    info!("  POST /v1/act           - Perform action");
+    info!("  POST /v1/human_bridge  - Human intervention");
+    info!("  POST /v1/browser/start - Start browser");
+    info!("  POST /v1/browser/stop  - Stop browser");
+    info!("  GET  /v1/status        - Get status");
+    info!("===========================================");
     
     let listener = tokio::net::TcpListener::bind(addr)
         .await
@@ -191,5 +387,12 @@ mod tests {
         let config = EngineConfig::default();
         let router = create_router(&config);
         assert!(router.is_ok());
+    }
+
+    #[test]
+    fn test_action_type_parsing() {
+        assert!(ActionType::from_str("click").is_some());
+        assert!(ActionType::from_str("type").is_some());
+        assert!(ActionType::from_str("invalid").is_none());
     }
 }
