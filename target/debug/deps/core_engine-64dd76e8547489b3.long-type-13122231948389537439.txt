@@ -1,0 +1,2 @@
+fn(State<Arc<AppState>>, Json<ActRequest>) -> impl Future<Output = Result<Json<ActResponse>, (axum::http::StatusCode, std::string::String)>> {act_handler}
+fn(State<Arc<AppState>>, Json<ActRequest>) -> impl Future<Output = Result<Json<ActResponse>, (axum::http::StatusCode, std::string::String)>> {act_handler}: Handler<_, _>

@@ -7,8 +7,8 @@
 | # | 任务 | 状态 | 进度 | 更新日期 |
 |---|------|------|------|----------|
 | 1 | 实现 CDP/Browser 控制 | ✅ 已完成 | 100% | 2026-02-25 |
-| 2 | Inspector 事件绑定 | ⏳ 待开始 | 0% | 2026-02-25 |
-| 3 | API Server 集成 | ⏳ 待开始 | 0% | 2026-02-25 |
+| 2 | Inspector 事件绑定 | ✅ 已完成 | 100% | 2026-02-25 |
+| 3 | API Server 集成 | 🔄 进行中 | 30% | 2026-02-25 |
 
 ### P1 - 中优先级
 
@@ -33,11 +33,13 @@
 **P0-1: CDP/Browser 控制**
 - 状态: ✅ 已完成
 - 方法: Chrome subprocess + CDP HTTP API (ureq)
-- 依赖: ureq 2.x
-- 提交: `7d138b49`
+- 提交: `ee0eee9`
 
-### 2026-02-25 (之前)
+**P0-2: Inspector 事件绑定**
+- 状态: ✅ 已完成
+- 新增方法: request_started(), request_finished(), dom_mutated(), on_navigate(), mark_ready()
+- 提交: `c16871d`
 
-| Phase | 状态 |
-|-------|------|
-| Phase 1-5 | ✅ 完成 |
+**P0-3: API Server 集成**
+- 状态: 🔄 进行中
+- 目标: 串联 CDP + Inspector + Parser
