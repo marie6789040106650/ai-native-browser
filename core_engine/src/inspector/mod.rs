@@ -2,12 +2,6 @@
 //! 
 //! Monitors network requests and DOM mutations to determine page readiness.
 //! Blueprint 3.1: Traffic Inspector Implementation
-//!
-//! Key features:
-//! 1. Listen to Network.requestWillBeSent -> active_requests + 1
-//! 2. Listen to Network.loadingFinished/loadingFailed -> active_requests - 1
-//! 3. Listen to DOM.childNodeInserted -> update last_mutation_time
-//! 4. Provide async wait_until_ready(): loop until (active_requests == 0) && (DOM idle > 500ms)
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
@@ -46,6 +40,9 @@ pub struct InspectorConfig {
     
     /// Maximum wait time (ms)
     pub max_wait_time: Duration,
+    
+    /// Polling interval for network check (ms)
+    pub network_poll_interval: Duration,
 }
 
 impl Default for InspectorConfig {
@@ -54,33 +51,15 @@ impl Default for InspectorConfig {
             dom_idle_threshold: Duration::from_millis(500),
             network_idle_threshold: Duration::from_millis(1000),
             max_wait_time: Duration::from_secs(30),
+            network_poll_interval: Duration::from_millis(100),
         }
     }
-}
-
-/// Event handler trait for inspector events
-pub trait InspectorEventHandler: Send + Sync {
-    /// Called when a network request starts
-    fn on_request_started(&self, request_id: &str, url: &str);
-    
-    /// Called when a network request finishes
-    fn on_request_finished(&self, request_id: &str);
-    
-    /// Called when a network request fails
-    fn on_request_failed(&self, request_id: &str, error: &str);
-    
-    /// Called when DOM mutates
-    fn on_dom_mutated(&self);
-    
-    /// Called when page navigates
-    fn on_navigate(&self, url: &str);
 }
 
 /// Traffic inspector for monitoring page state
 pub struct TrafficInspector {
     state: RwLock<InspectorState>,
     config: InspectorConfig,
-    /// Count active requests using atomic for quick checks
     active_count: AtomicU32,
 }
 
@@ -99,8 +78,10 @@ impl TrafficInspector {
         Self::new(InspectorConfig::default())
     }
 
+    // ========== Manual Event Triggers ==========
+    // These can be called by the CDP client when events are detected
+
     /// Record network request started
-    /// Corresponds to CDP "Network.requestWillBeSent"
     pub fn request_started(&self) {
         let count = self.active_count.fetch_add(1, Ordering::SeqCst);
         let mut state = self.state.write();
@@ -110,7 +91,6 @@ impl TrafficInspector {
     }
 
     /// Record network request finished
-    /// Corresponds to CDP "Network.loadingFinished"
     pub fn request_finished(&self) {
         let count = self.active_count.fetch_sub(1, Ordering::SeqCst);
         let mut state = self.state.write();
@@ -120,19 +100,15 @@ impl TrafficInspector {
             state.active_requests = 0;
         }
         debug!("Network request finished, active: {}", state.active_requests);
-        
-        // Check if ready after request completes
         self.check_ready();
     }
 
     /// Record network request failed
-    /// Corresponds to CDP "Network.loadingFailed"
     pub fn request_failed(&self) {
         self.request_finished();
     }
 
-    /// Record DOM mutation
-    /// Corresponds to CDP "DOM.childNodeInserted" or similar
+    /// Record DOM mutation (call after page changes)
     pub fn dom_mutated(&self) {
         let mut state = self.state.write();
         state.last_mutation = Some(Instant::now());
@@ -162,6 +138,8 @@ impl TrafficInspector {
         info!("Navigated to: {}", url);
     }
 
+    // ========== State Management ==========
+
     /// Check if page is ready
     fn check_ready(&self) {
         let mut state = self.state.write();
@@ -174,27 +152,22 @@ impl TrafficInspector {
                     info!("Page is now ready after {:?} of DOM idle", idle_time);
                 }
             } else {
-                // No mutations recorded yet, consider ready
                 state.is_ready = true;
             }
         }
     }
 
     /// Wait until page is ready
-    /// Blueprint 3.1: Core algorithm
-    /// loop until (active_requests == 0) && (DOM idle > dom_idle_threshold)
     pub async fn wait_until_ready(&self) -> Result<InspectorState, CoreError> {
         let start = Instant::now();
         
         loop {
-            // Quick check using atomic
             if self.active_count.load(Ordering::SeqCst) == 0 {
                 let state = self.state.read();
                 if state.is_ready {
                     return Ok(state.clone());
                 }
                 
-                // Check DOM idle time
                 if let Some(last_mutation) = state.last_mutation {
                     if last_mutation.elapsed() >= self.config.dom_idle_threshold {
                         drop(state);
@@ -203,7 +176,6 @@ impl TrafficInspector {
                         return Ok(s.clone());
                     }
                 } else {
-                    // No mutations, consider ready
                     drop(state);
                     let mut s = self.state.write();
                     s.is_ready = true;
@@ -211,14 +183,12 @@ impl TrafficInspector {
                 }
             }
             
-            // Check timeout
             if start.elapsed() > self.config.max_wait_time {
                 warn!("Timeout waiting for page ready");
                 return Err(CoreError::Inspector("Timeout waiting for page ready".to_string()));
             }
             
-            // Wait before checking again (100ms polling)
-            tokio::time::sleep(Duration::from_millis(100)).await;
+            tokio::time::sleep(self.config.network_poll_interval).await;
         }
     }
 
@@ -227,7 +197,7 @@ impl TrafficInspector {
         self.state.read().clone()
     }
 
-    /// Reset inspector state (for new page)
+    /// Reset inspector state
     pub fn reset(&self) {
         let mut state = self.state.write();
         state.active_requests = 0;
@@ -247,6 +217,13 @@ impl TrafficInspector {
     /// Get active request count
     pub fn active_request_count(&self) -> u32 {
         self.active_count.load(Ordering::SeqCst)
+    }
+
+    /// Mark as ready (after navigation completes)
+    pub fn mark_ready(&self) {
+        let mut state = self.state.write();
+        state.is_ready = true;
+        info!("Inspector marked as ready");
     }
 }
 
