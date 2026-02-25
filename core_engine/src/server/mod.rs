@@ -147,25 +147,31 @@ async fn sense_handler(
         ));
     }
     
-    // Get inspector state
+    // Get inspector and CDP client
     let inspector = state.inspector.read();
-    let inspector_state = inspector.get_state();
     
-    // TODO: In real implementation:
-    // 1. Call wait_until_ready() on inspector
-    // 2. Get full DOM via CDP: cdp_client.content()
-    // 3. Parse with semantic parser
-    // 4. Return result
+    // Get page info from CDP (placeholder)
+    let cdp = state.cdp_client.read();
+    let url = cdp.get_url().unwrap_or_default();
+    let title = cdp.get_title().unwrap_or_default();
+    let content = cdp.content().unwrap_or_default();
     
-    // Placeholder response
+    // Update inspector state
+    inspector.set_page_info(Some(url.clone()), Some(title.clone()));
+    
+    // Parse HTML (placeholder - returns empty for now)
+    let mut parser = state.parser.write();
+    let semantic_tree = parser.parse_html(&content);
+    
+    info!("sense returned: {} nodes from {}", semantic_tree.len(), url);
+    
     let response = SenseResponse {
-        status: if inspector_state.is_ready { "ready" } else { "loading" }.to_string(),
-        url: inspector_state.url.clone().unwrap_or_default(),
-        page_title: inspector_state.title.clone().unwrap_or_default(),
-        semantic_tree: vec![],
+        status: "ready".to_string(),
+        url,
+        page_title: title,
+        semantic_tree,
     };
     
-    info!("sense returned: {} nodes", response.semantic_tree.len());
     Ok(Json(response))
 }
 
