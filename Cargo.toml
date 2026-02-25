@@ -28,3 +28,6 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # HTTP client for CDP
 ureq = { version = "2", features = ["json"] }
+
+# HTML parsing
+scraper = "0.25"

@@ -29,7 +29,6 @@ use tracing::{error, info, warn};
 
 use crate::{CoreError, EngineConfig};
 use crate::parser::SemanticNode;
-use crate::inspector::InspectorState;
 
 /// Shared application state
 pub struct AppState {

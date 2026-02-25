@@ -1,5 +1,5 @@
 //! Core Engine Server Entry Point
-//! 
+//!
 //! Standalone server for testing the core engine.
 
 use anyhow::Result;
@@ -17,12 +17,12 @@ async fn main() -> Result<()> {
         .init();
 
     tracing::info!("Starting AI Native Browser Core Engine Server...");
-    
+
     // Load configuration
     let config = core_engine::EngineConfig::default();
-    
+
     // Start server
     core_engine::server::start_server(config).await?;
-    
+
     Ok(())
 }

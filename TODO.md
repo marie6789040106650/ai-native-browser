@@ -8,7 +8,7 @@
 |---|------|------|------|----------|
 | 1 | 实现 CDP/Browser 控制 | ✅ 已完成 | 100% | 2026-02-25 |
 | 2 | Inspector 事件绑定 | ✅ 已完成 | 100% | 2026-02-25 |
-| 3 | API Server 集成 | 🔄 进行中 | 80% | 2026-02-25 |
+| 3 | API Server 集成 | ✅ 已完成 | 100% | 2026-02-25 |
 
 ### P1 - 中优先级
 
@@ -30,22 +30,16 @@
 
 ### 2026-02-25
 
-**P0-1: CDP/Browser 控制**
-- 状态: ✅ 已完成
+**P0-1: CDP/Browser 控制** (`ee0eee9`)
 - 方法: Chrome subprocess + CDP HTTP API (ureq)
-- 提交: `ee0eee9`
 
-**P0-2: Inspector 事件绑定**
-- 状态: ✅ 已完成
-- 新增方法: request_started(), request_finished(), dom_mutated(), on_navigate(), mark_ready()
-- 提交: `b85aa84`
+**P0-2: Inspector 事件绑定** (`b85aa84`)
+- 方法: request_started(), request_finished(), dom_mutated(), on_navigate(), mark_ready()
 
-**P0-3: API Server 集成**
-- 状态: 🔄 进行中 (80%)
-- /v1/sense: ✅ 已集成 CDP + Parser
-- /v1/act: ⏳ 待完成
-- /v1/browser/start: ⏳ 待完成
-- 提交: `3376ab1`
+**P0-3: API Server 集成** (`509c969`)
+- /v1/sense: ✅ CDP + Parser 集成
+- /v1/act: ✅ CDP 执行 click/type/scroll
+- /v1/browser/start: ✅ 真实启动 Chrome
 
 ---
 
@@ -54,14 +48,6 @@
 | 项目 | 状态 |
 |------|------|
 | 编译 | ✅ 通过 |
-| Warnings | 8 个 |
-| 最新 Commit | `3376ab1` |
-
----
-
-## 处理策略
-
-✅ 使用小步迭代模式成功：
-1. 每次修改后立即 cargo check
-2. 遇到错误立即修复
-3. 使用短时命令避免超时
+| Warnings | 9 个 |
+| P0 任务 | ✅ 全部完成 |
+| 最新 Commit | `509c969` |
