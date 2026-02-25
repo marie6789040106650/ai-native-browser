@@ -252,3 +252,42 @@ impl Drop for CdpClient {
         let _ = self.close();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_browser_config_default() {
+        let config = BrowserConfig::default();
+        assert_eq!(config.port, 9222);
+        assert!(config.headless);
+        assert!(config.browser_path.is_none());
+    }
+
+    #[test]
+    fn test_browser_config_custom() {
+        let config = BrowserConfig {
+            browser_path: Some("/usr/bin/chromium".to_string()),
+            user_data_dir: Some("/tmp/profile".to_string()),
+            headless: false,
+            port: 9333,
+        };
+        assert_eq!(config.port, 9333);
+        assert!(!config.headless);
+        assert_eq!(config.browser_path, Some("/usr/bin/chromium".to_string()));
+    }
+
+    #[test]
+    fn test_cdp_client_creation() {
+        let config = BrowserConfig::default();
+        let client = CdpClient::new(config);
+        assert!(!client.is_running());
+    }
+
+    #[test]
+    fn test_cdp_client_default() {
+        let client = CdpClient::default();
+        assert!(!client.is_running());
+    }
+}

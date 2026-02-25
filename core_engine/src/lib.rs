@@ -74,3 +74,43 @@ impl Default for EngineConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_engine_config_default() {
+        let config = EngineConfig::default();
+        assert!(config.headless);
+        assert!(config.sandbox);
+        assert_eq!(config.host, "127.0.0.1");
+        assert_eq!(config.port, 9222);
+    }
+
+    #[test]
+    fn test_engine_config_custom() {
+        let config = EngineConfig {
+            browser_path: Some("/usr/bin/chrome".to_string()),
+            user_data_dir: Some("/tmp/profile".to_string()),
+            headless: false,
+            sandbox: false,
+            host: "0.0.0.0".to_string(),
+            port: 8080,
+            dom_idle_threshold_ms: 1000,
+            network_idle_threshold_ms: 2000,
+        };
+        
+        assert!(!config.headless);
+        assert!(!config.sandbox);
+        assert_eq!(config.port, 8080);
+        assert_eq!(config.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn test_core_error_message() {
+        let err = CoreError::Browser("test error".to_string());
+        assert!(err.to_string().contains("Browser"));
+        assert!(err.to_string().contains("test error"));
+    }
+}

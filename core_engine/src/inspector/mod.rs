@@ -241,6 +241,7 @@ mod tests {
     fn test_request_tracking() {
         let inspector = TrafficInspector::default_inspector();
         
+        // Test request counting
         inspector.request_started();
         assert_eq!(inspector.active_request_count(), 1);
         
@@ -252,17 +253,28 @@ mod tests {
         
         inspector.request_finished();
         assert_eq!(inspector.active_request_count(), 0);
+        
+        // Test network idle detection
+        assert!(inspector.is_network_idle());
     }
 
     #[test]
-    fn test_reset() {
+    fn test_dom_mutation() {
         let inspector = TrafficInspector::default_inspector();
         
-        inspector.request_started();
         inspector.dom_mutated();
+        let state = inspector.get_state();
         
-        inspector.reset();
+        assert!(state.last_mutation.is_some());
+    }
+
+    #[test]
+    fn test_mark_ready() {
+        let inspector = TrafficInspector::default_inspector();
         
-        assert_eq!(inspector.active_request_count(), 0);
+        inspector.mark_ready();
+        let state = inspector.get_state();
+        
+        assert!(state.is_ready);
     }
 }

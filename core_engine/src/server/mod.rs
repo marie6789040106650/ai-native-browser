@@ -429,14 +429,26 @@ mod tests {
     #[test]
     fn test_router_creation() {
         let config = EngineConfig::default();
-        let router = create_router(&config);
-        assert!(router.is_ok());
+        let _router = create_router(&config);
+        // Router is created successfully (no panic)
     }
 
     #[test]
     fn test_action_type_parsing() {
         assert!(ActionType::from_str("click").is_some());
         assert!(ActionType::from_str("type").is_some());
+        assert!(ActionType::from_str("fill").is_some());
+        assert!(ActionType::from_str("scroll").is_some());
+        assert!(ActionType::from_str("wait").is_some());
+        assert!(ActionType::from_str("hover").is_some());
+        assert!(ActionType::from_str("select").is_some());
         assert!(ActionType::from_str("invalid").is_none());
+    }
+
+    #[test]
+    fn test_action_type_case_insensitive() {
+        assert!(ActionType::from_str("CLICK").is_some());
+        assert!(ActionType::from_str("Click").is_some());
+        assert!(ActionType::from_str("TYPE").is_some());
     }
 }

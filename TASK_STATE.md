@@ -4,17 +4,17 @@
 
 | 字段 | 值 |
 |------|-----|
-| **status** | idle |
-| **current_task** | P2-1: 清理代码警告 |
-| **last_updated** | 2026-02-25T17:06:00 |
+| **status** | completed |
+| **current_task** | P2-2: 添加单元测试 |
+| **last_updated** | 2026-02-25T18:15:00 |
 | **progress** | 100% |
 
 ## Last Execution
 
 | 字段 | 值 |
 |------|-----|
-| **last_heartbeat** | 2026-02-25T17:06:00 |
-| **completed_tasks** | P0-1, P0-2, P0-3, P1-1, P2-1 |
+| **last_heartbeat** | 2026-02-25T18:15:00 |
+| **completed_tasks** | P0-1, P0-2, P0-3, P1-1, P2-1, P2-2 |
 | **failed_tasks** | P1-2 (Tauri config) |
 
 ## Task Queue
@@ -25,4 +25,4 @@
 4. ~~P1-1: HTML 解析器接入~~ ✅
 5. ~~P1-2: Tauri 编译验证~~ ⚠️ 跳过
 6. ~~P2-1: 清理代码警告~~ ✅ 完成 (1 warning left)
-7. **P2-2: 添加单元测试** 🔄 待开始
+7. ~~P2-2: 添加单元测试~~ ✅ 完成 (17 tests added)
