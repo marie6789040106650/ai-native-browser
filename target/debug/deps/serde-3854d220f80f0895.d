@@ -1,0 +1,14 @@
+/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/deps/serde-3854d220f80f0895.d: /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/serde-59e38b4d875108be/out/private.rs
+
+/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/deps/libserde-3854d220f80f0895.rlib: /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/serde-59e38b4d875108be/out/private.rs
+
+/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/deps/libserde-3854d220f80f0895.rmeta: /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/serde-59e38b4d875108be/out/private.rs
+
+/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/bypasser/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/serde-59e38b4d875108be/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/bypasser/.openclaw/workspace/ai-native-browser/target/debug/build/serde-59e38b4d875108be/out
