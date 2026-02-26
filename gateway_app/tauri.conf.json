@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.ainativebrowser.gateway",
   "build": {
-    "frontendDist": "../src"
+    "frontendDist": "./web"
   },
   "app": {
     "windows": [

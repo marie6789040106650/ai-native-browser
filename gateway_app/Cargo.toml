@@ -5,13 +5,9 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
-[lib]
-name = "gateway_app_lib"
-path = "src/lib.rs"
-
 [[bin]]
 name = "gateway_app"
-path = "src-tauri/src/main.rs"
+path = "src/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -27,7 +23,7 @@ tracing-subscriber.workspace = true
 anyhow.workspace = true
 
 # Tauri dependencies
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 
 # System integration

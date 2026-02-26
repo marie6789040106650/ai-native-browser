@@ -18,6 +18,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 
+# Tauri build
+tauri-build = { version = "2", features = [] }
+
 # Async runtime
 async-trait = "0.1"
 
