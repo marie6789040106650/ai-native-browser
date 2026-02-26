@@ -9,6 +9,7 @@
 //! 3. Merge consecutive static text nodes
 //! 4. Generate CSS selectors for execution
 
+use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -262,37 +263,118 @@ impl SemanticParser {
         id
     }
 
-    /// Parse raw HTML content into semantic tree
-    /// This is a simplified implementation using basic HTML parsing
+    /// Parse raw HTML content into semantic tree using scraper
     pub fn parse_html(&mut self, html: &str) -> Vec<SemanticNode> {
-        // Simple approach: extract key elements from HTML
-        // In production, would use a proper HTML parser
+        let document = Html::parse_document(html);
         
         let mut nodes = Vec::new();
         
-        // Extract buttons
-        self.extract_elements(html, "button", &mut nodes);
+        // Selector for interactive elements
+        let interactive_selector = Selector::parse("button, input, select, textarea, a, label, details, option, fieldset, form, [role='button'], [role='searchbox'], [role='textbox'], [role='link'], [onclick], [href]").unwrap();
         
-        // Extract inputs
-        self.extract_elements(html, "input", &mut nodes);
-        
-        // Extract links
-        self.extract_elements(html, "a", &mut nodes);
-        
-        // Extract other interactive elements
-        for tag in &["select", "textarea", "label"] {
-            self.extract_elements(html, tag, &mut nodes);
+        // First pass: collect interactive elements
+        for element in document.select(&interactive_selector) {
+            let tag = element.value().name().to_string();
+            
+            // Skip if should skip
+            if self.should_skip_tag(&tag) {
+                continue;
+            }
+            
+            // Get ID
+            let id = element.value().id().map(|s| s.to_string());
+            
+            // Get classes
+            let class = element.value().classes()
+                .map(|c| c.to_string())
+                .collect::<Vec<_>>()
+                .join(" ");
+            
+            // Get name attribute
+            let name = element.value().attr("name")
+                .map(|s| s.to_string());
+            
+            // Get role
+            let role = element.value().attr("role")
+                .map(|s| s.to_string());
+            
+            // Get text content
+            let text = element.text()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .trim()
+                .to_string();
+            
+            // Get value (for inputs)
+            let value = element.value().attr("value")
+                .map(|s| s.to_string());
+            
+            // Get placeholder
+            let placeholder = element.value().attr("placeholder")
+                .map(|s| s.to_string());
+            
+            // Get href (for links)
+            let href = element.value().attr("href")
+                .map(|s| s.to_string());
+            
+            // Get style
+            let style = element.value().attr("style")
+                .map(|s| s.to_string());
+            
+            // Check if hidden
+            if self.is_hidden_element(&style) {
+                continue;
+            }
+            
+            // Build attributes set
+            let mut attributes = HashSet::new();
+            for attr in element.value().attrs() {
+                attributes.insert(attr.0.to_string());
+            }
+            
+            let is_interactive = self.is_interactive(&tag, role.as_deref(), &attributes);
+            
+            // Skip non-interactive with no useful content
+            if !is_interactive && text.is_empty() && value.is_none() {
+                continue;
+            }
+            
+            // Generate selector
+            let path = if let Some(ref id) = id {
+                format!("#{}", id)
+            } else if !class.is_empty() {
+                format!("{}.{}", tag, class.split_whitespace().next().unwrap_or(""))
+            } else if let Some(ref n) = name {
+                format!("{}[name=\"{}\"]", tag, n)
+            } else if tag == "input" {
+                format!("input[type=\"{}\"]", element.value().attr("type").unwrap_or("text"))
+            } else {
+                tag.clone()
+            };
+            
+            let node_id = self.next_id();
+            
+            let node = SemanticNode {
+                id: node_id,
+                tag,
+                role,
+                text,
+                is_interactive,
+                path,
+                children: Vec::new(),
+                value,
+                placeholder,
+                href,
+            };
+            
+            nodes.push(node);
         }
         
-        nodes
-    }
-
-    /// Extract elements by tag name (simplified regex-based)
-    fn extract_elements(&mut self, html: &str, tag: &str, nodes: &mut Vec<SemanticNode>) {
-        // This is a placeholder - real implementation would use proper HTML parsing
-        // Would use something like scraper or tl crates
+        // Deduplicate by path
+        let mut seen = std::collections::HashSet::new();
+        nodes.retain(|n| seen.insert(n.path.clone()));
         
-        let _ = (html, tag, nodes);
+        nodes
     }
 
     /// Parse from raw elements to semantic nodes
