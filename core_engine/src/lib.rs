@@ -8,6 +8,7 @@ pub mod parser;
 pub mod inspector;
 pub mod server;
 pub mod error;
+pub mod performance;
 
 pub use anyhow::Result;
 pub use thiserror::Error;
