@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AI Native Browser Gateway",
+  "version": "0.1.0",
+  "identifier": "com.ainativebrowser.gateway",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "AI Native Browser Gateway",
+        "width": 400,
+        "height": 300
+      }
+    ]
+  }
+}

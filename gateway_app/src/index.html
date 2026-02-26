@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Native Browser Gateway</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+        
+        /* Status Card */
+        .status-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+        .status-label { color: #94a3b8; }
+        .status-value { font-weight: bold; }
+        .status-value.running { color: #4ade80; }
+        .status-value.stopped { color: #f87171; }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-group { display: flex; gap: 0.5rem; }
+        
+        /* Logs Panel */
+        .logs-panel {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .logs-title { font-size: 0.875rem; color: #8b949e; }
+        .log-entry {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.75rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #21262d;
+        }
+        .log-time { color: #8b949e; }
+        .log-endpoint { color: #58a6ff; }
+        .log-duration { color: #7ee787; }
+        .log-status { color: #8b949e; }
+        
+        /* API Status */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .api-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .api-dot.ok { background: #4ade80; }
+        .api-dot.error { background: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Native Browser Gateway</h1>
+        
+        <!-- Status Card -->
+        <div class="status-card">
+            <div class="status-row">
+                <span class="status-label">Engine Status</span>
+                <span class="status-value" id="engineStatus">Stopped</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">API Server</span>
+                <span class="api-status">
+                    <span class="api-dot" id="apiDot"></span>
+                    <span class="status-value" id="apiStatus">Checking...</span>
+                </span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Auto-Start</span>
+                <span class="status-value" id="autoStart">Disabled</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Version</span>
+                <span class="status-value" id="version">0.1.0</span>
+            </div>
+        </div>
+        
+        <!-- Control Buttons -->
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="startEngine()">Start Engine</button>
+            <button class="btn btn-danger" onclick="stopEngine()">Stop Engine</button>
+            <button class="btn" onclick="toggleAutoStart()" style="background: #374151; color: white;">Toggle Auto-Start</button>
+        </div>
+        
+        <!-- Logs Panel -->
+        <div class="logs-panel">
+            <div class="logs-header">
+                <span class="logs-title">📊 API Call Logs</span>
+                <button class="btn" onclick="refreshLogs()" style="background: #1f2937; color: white; padding: 0.25rem 0.5rem; font-size: 0.75rem;">Refresh</button>
+            </div>
+            <div id="logsContent">
+                <div class="log-entry">Loading logs...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStatus();
+            setInterval(checkStatus, 5000);
+            refreshLogs();
+        });
+        
+        async function checkStatus() {
+            try {
+                const resp = await fetch('http://127.0.0.1:9222/health');
+                const data = await resp.json();
+                
+                document.getElementById('apiStatus').textContent = 'Running';
+                document.getElementById('apiDot').className = 'api-dot ok';
+            } catch (e) {
+                document.getElementById('apiStatus').textContent = 'Unavailable';
+                document.getElementById('apiDot').className = 'api-dot error';
+            }
+        }
+        
+        async function startEngine() {
+            document.getElementById('engineStatus').textContent = 'Starting...';
+            try {
+                await fetch('http://127.0.0.1:9222/v1/browser/start', { method: 'POST' });
+                document.getElementById('engineStatus').textContent = 'Running';
+                document.getElementById('engineStatus').className = 'status-value running';
+            } catch (e) {
+                document.getElementById('engineStatus').textContent = 'Error';
+            }
+        }
+        
+        async function stopEngine() {
+            document.getElementById('engineStatus').textContent = 'Stopping...';
+            try {
+                await fetch('http://127.0.0.1:9222/v1/browser/stop', { method: 'POST' });
+                document.getElementById('engineStatus').textContent = 'Stopped';
+                document.getElementById('engineStatus').className = 'status-value stopped';
+            } catch (e) {
+                document.getElementById('engineStatus').textContent = 'Error';
+            }
+        }
+        
+        async function toggleAutoStart() {
+            const resp = await fetch('http://127.0.0.1:9222/v1/status');
+            const data = await resp.json();
+            document.getElementById('autoStart').textContent = data.auto_start ? 'Enabled' : 'Disabled';
+        }
+        
+        async function refreshLogs() {
+            // Placeholder - would call Tauri API in production
+            const logs = [
+                { timestamp: '14:55:30', endpoint: '/v1/sense', duration_ms: 145, status: 200 },
+                { timestamp: '14:55:25', endpoint: '/v1/act', duration_ms: 89, status: 200 },
+                { timestamp: '14:55:20', endpoint: '/v1/sense', duration_ms: 132, status: 200 },
+            ];
+            
+            const html = logs.map(log => `
+                <div class="log-entry">
+                    <span class="log-time">[${log.timestamp}]</span>
+                    <span class="log-endpoint">${log.endpoint}</span>
+                    <span class="log-duration">${log.duration_ms}ms</span>
+                    <span class="log-status">${log.status}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('logsContent').innerHTML = html || '<div class="log-entry">No logs yet</div>';
+        }
+    </script>
+</body>
+</html>
