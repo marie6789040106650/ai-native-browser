@@ -7,6 +7,7 @@ pub mod cdp;
 pub mod parser;
 pub mod inspector;
 pub mod server;
+pub mod error;
 
 pub use anyhow::Result;
 pub use thiserror::Error;
