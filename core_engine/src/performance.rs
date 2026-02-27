@@ -2,7 +2,6 @@
 //!
 //! Provides performance-related utilities for the core engine.
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use std::collections::HashMap;

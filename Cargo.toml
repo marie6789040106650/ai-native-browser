@@ -34,3 +34,10 @@ ureq = { version = "2", features = ["json"] }
 
 # HTML parsing
 scraper = "0.25"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

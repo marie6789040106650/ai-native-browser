@@ -39,7 +39,8 @@ impl Default for BrowserConfig {
 pub struct CdpClient {
     browser_process: Option<std::process::Child>,
     config: BrowserConfig,
-    /// Current tab ID
+    /// Current tab ID (reserved for future use)
+    #[allow(dead_code)]
     tab_id: Mutex<Option<String>>,
 }
 
