@@ -3,12 +3,15 @@
 //! Using chromiumoxide for real browser control.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::thread;
 use parking_lot::RwLock;
 use tracing::{info, error};
 use chromiumoxide_cdp::cdp::js_protocol::runtime::EvaluateParams;
+use chromiumoxide_cdp::cdp::browser_protocol::network::{EventRequestWillBeSent, EventLoadingFinished, EventLoadingFailed};
 use chromiumoxide::{Browser, BrowserConfig};
 use tokio::sync::mpsc;
+use futures::StreamExt;
 
 use crate::CoreError;
 
@@ -20,6 +23,8 @@ pub struct CdpClient {
     browser_handle: Arc<RwLock<Option<BrowserHandle>>>,
     // Shared content storage (for async browser thread to write to)
     content_cache: Arc<RwLock<String>>,
+    // Network event counter for inspector
+    active_requests: Arc<AtomicU32>,
 }
 
 struct CdpClientInner {
@@ -55,6 +60,7 @@ impl CdpClient {
             })),
             browser_handle: Arc::new(RwLock::new(None)),
             content_cache: Arc::new(RwLock::new(String::new())),
+            active_requests: Arc::new(AtomicU32::new(0)),
         }
     }
 
@@ -65,8 +71,9 @@ impl CdpClient {
         // Create channel for commands
         let (cmd_tx, cmd_rx) = mpsc::channel::<BrowserCmd>(32);
         
-        // Clone content cache for browser thread
+        // Clone shared state for browser thread
         let content_cache = self.content_cache.clone();
+        let active_requests = self.active_requests.clone();
         
         // Spawn browser thread with its own tokio runtime
         let browser_thread = thread::spawn(move || {
@@ -99,6 +106,50 @@ impl CdpClient {
                                 match browser.new_page("about:blank").await {
                                     Ok(page) => {
                                         info!("[Browser Thread] Page created");
+                                        
+                                        // Use the cloned active_requests (from before move)
+                                        // Clone it again for the async task
+                                        let event_active_requests = active_requests.clone();
+                                        
+                                        // Spawn event listener task
+                                        let event_page = page.clone();
+                                        let active_req = event_active_requests.clone();
+                                        tokio::spawn(async move {
+                                            // Listen for network events
+                                            let mut request_events = match event_page.event_listener::<EventRequestWillBeSent>().await {
+                                                Ok(stream) => stream,
+                                                Err(e) => {
+                                                    error!("[Event Listener] Failed to create request listener: {}", e);
+                                                    return;
+                                                }
+                                            };
+                                            
+                                            let mut finish_events = match event_page.event_listener::<EventLoadingFinished>().await {
+                                                Ok(stream) => stream,
+                                                Err(e) => {
+                                                    error!("[Event Listener] Failed to create finish listener: {}", e);
+                                                    return;
+                                                }
+                                            };
+                                            
+                                            info!("[Event Listener] Network event listeners created");
+                                            
+                                            // Process events
+                                            loop {
+                                                tokio::select! {
+                                                    Some(req_event) = request_events.next() => {
+                                                        let _ = req_event;
+                                                        let count = active_req.fetch_add(1, Ordering::SeqCst);
+                                                        info!("[Event] Request started, active: {}", count + 1);
+                                                    }
+                                                    Some(finish_event) = finish_events.next() => {
+                                                        let _ = finish_event;
+                                                        let count = active_req.fetch_sub(1, Ordering::SeqCst);
+                                                        info!("[Event] Request finished, active: {}", count - 1);
+                                                    }
+                                                }
+                                            }
+                                        });
                                         
                                         // Handle commands
                                         let mut rx = cmd_rx;
@@ -289,6 +340,16 @@ impl CdpClient {
     pub fn get_title(&self) -> String {
         let inner = self.inner.read();
         inner.current_title.clone()
+    }
+
+    /// Get active network request count
+    pub fn get_active_requests(&self) -> u32 {
+        self.active_requests.load(Ordering::SeqCst)
+    }
+
+    /// Reset active request count (e.g., after navigation)
+    pub fn reset_active_requests(&self) {
+        self.active_requests.store(0, Ordering::SeqCst);
     }
 
     /// Get page content (from cached state)
