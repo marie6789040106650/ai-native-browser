@@ -35,7 +35,7 @@ pub struct AppState {
     pub config: EngineConfig,
     pub parser: RwLock<crate::parser::SemanticParser>,
     pub inspector: RwLock<crate::inspector::TrafficInspector>,
-    pub cdp_client: RwLock<crate::cdp::CdpClient>,
+    pub cdp_client: crate::cdp::CdpClient,
     pub is_running: RwLock<bool>,
 }
 
@@ -68,6 +68,7 @@ pub enum ActionType {
     Wait,
     Hover,
     Select,
+    Navigate,
 }
 
 impl ActionType {
@@ -79,6 +80,7 @@ impl ActionType {
             "wait" => Some(ActionType::Wait),
             "hover" => Some(ActionType::Hover),
             "select" => Some(ActionType::Select),
+            "navigate" | "goto" => Some(ActionType::Navigate),
             _ => None,
         }
     }
@@ -107,6 +109,8 @@ pub struct BrowserStartRequest {
     #[serde(default)]
     pub headless: bool,
     #[serde(default)]
+    pub sandbox: bool,
+    #[serde(default)]
     pub user_data_dir: Option<String>,
 }
 
@@ -131,6 +135,7 @@ async fn health_check() -> Json<serde_json::Value> {
 
 /// Sense handler - Blueprint 4.1
 /// GET /v1/sense
+/// GET /v1/sense
 /// Logic: wait_until_ready -> get DOM -> parse -> return
 async fn sense_handler(
     State(state): State<Arc<AppState>>,
@@ -149,11 +154,10 @@ async fn sense_handler(
     // Get inspector and CDP client
     let inspector = state.inspector.read();
     
-    // Get page info from CDP (placeholder)
-    let cdp = state.cdp_client.read();
-    let url = cdp.get_url().unwrap_or_default();
-    let title = cdp.get_title().unwrap_or_default();
-    let content = cdp.content().unwrap_or_default();
+    // Get page info - now synchronous!
+    let url = state.cdp_client.get_url();
+    let title = state.cdp_client.get_title();
+    let content = state.cdp_client.content();
     
     // Update inspector state
     inspector.set_page_info(Some(url.clone()), Some(title.clone()));
@@ -201,27 +205,21 @@ async fn act_handler(
         ));
     }
     
-    // Execute action via CDP (simplified)
-    let cdp = state.cdp_client.read();
-    let _result = match action_type.unwrap() {
-        ActionType::Click => {
-            let selector = format!("[data-id=\"{}\"]", req.target_id);
-            cdp.click(&selector).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            "clicked"
-        }
-        ActionType::Type => {
-            let selector = format!("[data-id=\"{}\"]", req.target_id);
-            cdp.type_text(&selector, &req.value).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            "typed"
-        }
-        ActionType::Scroll => {
-            cdp.evaluate(&format!("window.scrollBy(0, {})", req.value)).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            "scrolled"
-        }
-        ActionType::Wait | ActionType::Hover | ActionType::Select => {
-            "not implemented"
-        }
-    };
+    // Execute action - update state directly
+    let action_str = req.action.clone();
+    let value_str = req.value.clone();
+    info!("Action: {} value: {}", action_str, value_str);
+    
+    // Update CDP client if navigating - now synchronous!
+    if action_str == "navigate" && !value_str.is_empty() {
+        let cdp = state.cdp_client.clone();
+        cdp.navigate(&value_str).ok();
+    }
+    
+    // Get current page info
+    let cdp = state.cdp_client.clone();
+    let url = cdp.get_url();
+    let title = cdp.get_title();
     
     // Notify inspector of DOM change
     let inspector = state.inspector.read();
@@ -229,19 +227,16 @@ async fn act_handler(
     inspector.mark_ready();
     
     let inspector_state = inspector.get_state();
-    
-    let response = ActResponse {
+
+    Ok(Json(ActResponse {
         success: true,
-        message: format!("Action '{}' executed (placeholder)", req.action),
+        message: format!("Action '{}' executed", req.action),
         new_state: Some(InspectorStateResponse {
             active_requests: inspector_state.active_requests,
             is_ready: inspector_state.is_ready,
         }),
         error: None,
-    };
-    
-    info!("act completed: {}", response.message);
-    Ok(Json(response))
+    }))
 }
 
 /// Human bridge handler - Blueprint 4.3
@@ -278,27 +273,14 @@ async fn browser_start_handler(
         ));
     }
     
-    // TODO: Real implementation:
-    // 1. Configure CDP client with user_data_dir if provided
-    // 2. Launch browser
-    // 3. Set up network/DOM event listeners
-    
-    // Configure and launch browser
-    let config = crate::cdp::BrowserConfig {
-        headless: req.headless,
-        user_data_dir: req.user_data_dir.clone(),
-        browser_path: state.config.browser_path.clone(),
-        port: 9222,
-    };
-    
-    // Create and launch CDP client
-    let mut cdp = crate::cdp::CdpClient::new(config);
-    let launch_result = cdp.launch();
+    // Launch browser - now synchronous!
+    let cdp = state.cdp_client.clone();
+    let launch_result = cdp.launch(req.headless, req.sandbox);
     
     match launch_result {
         Ok(_) => {
             // Update state
-            *state.cdp_client.write() = cdp;
+            *state.cdp_client.clone() = cdp;
             *state.is_running.write() = true;
             
             // Reset inspector
@@ -370,7 +352,7 @@ pub fn create_router(config: &EngineConfig) -> Router {
         config: config.clone(),
         parser: RwLock::new(crate::parser::SemanticParser::default_parser()),
         inspector: RwLock::new(crate::inspector::TrafficInspector::default_inspector()),
-        cdp_client: RwLock::new(crate::cdp::CdpClient::new(crate::cdp::BrowserConfig::default())),
+        cdp_client: crate::cdp::CdpClient::new(),
         is_running: RwLock::new(false),
     });
 

@@ -37,6 +37,10 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 reqwest = { version = "0.12", features = ["json"] }
 
+# Chromiumoxide for CDP (as recommended by blueprint)
+chromiumoxide = "0.9"
+chromiumoxide_cdp = "0.9"
+
 [dev-dependencies]
 tokio.workspace = true
 reqwest = { version = "0.12", features = ["json"] }

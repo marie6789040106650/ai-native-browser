@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
     }
     
     if let Ok(port) = std::env::var("SERVER_PORT") {
-        config.port = port.parse().unwrap_or(9222);
+        config.port = port.parse().unwrap_or(8080);
     }
     
     if let Ok(headless) = std::env::var("HEADLESS") {
