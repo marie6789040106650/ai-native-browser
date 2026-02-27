@@ -190,3 +190,91 @@ cargo fmt
 ## 许可证
 
 MIT License
+
+---
+
+## 部署到 GitHub
+
+### 1. 创建 GitHub 仓库
+
+```bash
+# 在 GitHub 创建新仓库后
+cd ai-native-browser
+
+# 初始化 git (如果需要)
+git init
+
+# 添加远程仓库
+git remote add origin https://github.com/YOUR_USERNAME/ai-native-browser.git
+```
+
+### 2. 推送代码
+
+```bash
+# 添加所有文件
+git add .
+
+# 提交
+git commit -m "feat: AI Native Browser v0.1.0"
+
+# 推送
+git push -u origin main
+```
+
+### 3. 发布二进制 (可选)
+
+```bash
+# 创建 tag
+git tag -a v0.1.0 -m "Release v0.1.0"
+
+# 推送 tag
+git push origin v0.1.0
+
+# 或使用 GitHub CLI
+gh release create v0.1.0 \
+  --title "AI Native Browser v0.1.0" \
+  --notes "Initial release" \
+  bin/core-server \
+  bin/gateway_app
+```
+
+### 4. GitHub Actions (可选)
+
+创建 `.github/workflows/release.yml`:
+
+```yaml
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build
+        run: |
+          cargo build --release --package core_engine
+          cargo build --release --package gateway_app
+          
+      - name: Upload artifacts
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/release/core-server
+          asset_name: core-server
+```
+
+## 快速启动脚本
+
+```bash
+# macOS
+./bin/launch.sh
+
+# 或手动指定 Chrome 路径
+BROWSER_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  ./bin/core-server
+```
