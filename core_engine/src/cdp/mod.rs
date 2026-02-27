@@ -18,6 +18,8 @@ pub struct CdpClient {
     inner: Arc<RwLock<CdpClientInner>>,
     // Browser instance (kept in separate thread)
     browser_handle: Arc<RwLock<Option<BrowserHandle>>>,
+    // Shared content storage (for async browser thread to write to)
+    content_cache: Arc<RwLock<String>>,
 }
 
 struct CdpClientInner {
@@ -52,6 +54,7 @@ impl CdpClient {
                 current_content: String::new(),
             })),
             browser_handle: Arc::new(RwLock::new(None)),
+            content_cache: Arc::new(RwLock::new(String::new())),
         }
     }
 
@@ -61,6 +64,9 @@ impl CdpClient {
         
         // Create channel for commands
         let (cmd_tx, cmd_rx) = mpsc::channel::<BrowserCmd>(32);
+        
+        // Clone content cache for browser thread
+        let content_cache = self.content_cache.clone();
         
         // Spawn browser thread with its own tokio runtime
         let browser_thread = thread::spawn(move || {
@@ -188,6 +194,11 @@ impl CdpClient {
                                                             let html = result.value()
                                                                 .map(|v| v.to_string())
                                                                 .unwrap_or_default();
+                                                            // Also update shared cache
+                                                            {
+                                                                let mut cache = content_cache.write();
+                                                                *cache = html.clone();
+                                                            }
                                                             let _ = resp.send(Ok(html));
                                                         }
                                                         Err(e) => {
@@ -280,10 +291,43 @@ impl CdpClient {
         inner.current_title.clone()
     }
 
-    /// Get page content
+    /// Get page content (from cached state)
     pub fn content(&self) -> String {
         let inner = self.inner.read();
         inner.current_content.clone()
+    }
+
+    /// Refresh and get page content from real browser
+    /// This triggers a content fetch and waits briefly for the result
+    pub fn refresh_content(&self) -> Result<String, CoreError> {
+        info!("[CDP] Refreshing content from browser");
+        
+        let (resp_tx, _) = mpsc::channel(1);
+        
+        let handle = self.browser_handle.read();
+        if let Some(ref h) = *handle {
+            // Send content request to browser
+            let cmd = BrowserCmd::Content(resp_tx);
+            let _ = h.cmd_tx.try_send(cmd);
+        } else {
+            return Err(CoreError::Browser("Browser not running".to_string()));
+        }
+        drop(handle);
+        
+        // Give browser thread time to respond (brief sleep)
+        // This is a hack - proper solution would be async
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        
+        // Read from shared cache (browser thread updates it)
+        let cache = self.content_cache.read();
+        let content = cache.clone();
+        drop(cache);
+        
+        // Update inner state
+        let mut inner = self.inner.write();
+        inner.current_content = content.clone();
+        
+        Ok(content)
     }
 
     /// Click element

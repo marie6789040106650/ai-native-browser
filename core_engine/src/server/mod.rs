@@ -157,7 +157,8 @@ async fn sense_handler(
     // Get page info - now synchronous!
     let url = state.cdp_client.get_url();
     let title = state.cdp_client.get_title();
-    let content = state.cdp_client.content();
+    // Refresh content from real browser
+    let content = state.cdp_client.refresh_content().unwrap_or_default();
     
     // Update inspector state
     inspector.set_page_info(Some(url.clone()), Some(title.clone()));
