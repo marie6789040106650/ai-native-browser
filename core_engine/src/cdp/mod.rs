@@ -65,8 +65,13 @@ impl CdpClient {
     }
 
     /// Launch browser in a separate thread with its own tokio runtime
-    pub fn launch(&self, headless: bool, sandbox: bool) -> Result<(), CoreError> {
-        info!("[CDP] Launch browser (headless={}, sandbox={})", headless, sandbox);
+    /// 
+    /// # Arguments
+    /// * `headless` - Run in headless mode
+    /// * `sandbox` - Run with sandbox (disable for root/CI)
+    /// * `user_data_dir` - Optional Chrome profile directory for login state
+    pub fn launch(&self, headless: bool, sandbox: bool, user_data_dir: Option<&str>) -> Result<(), CoreError> {
+        info!("[CDP] Launch browser (headless={}, sandbox={}, user_data_dir={:?})", headless, sandbox, user_data_dir);
         
         // Create channel for commands
         let (cmd_tx, cmd_rx) = mpsc::channel::<BrowserCmd>(32);
@@ -74,6 +79,9 @@ impl CdpClient {
         // Clone shared state for browser thread
         let content_cache = self.content_cache.clone();
         let active_requests = self.active_requests.clone();
+        
+        // Convert user_data_dir to PathBuf if provided
+        let user_data_path = user_data_dir.map(std::path::PathBuf::from);
         
         // Spawn browser thread with its own tokio runtime
         let browser_thread = thread::spawn(move || {
@@ -84,17 +92,23 @@ impl CdpClient {
             
             rt.block_on(async {
                 // Build browser config
-                let builder = BrowserConfig::builder();
-                let mut builder = if !headless {
-                    builder.with_head()
-                } else {
-                    builder
-                };
-                let mut builder = if !sandbox {
-                    builder.no_sandbox()
-                } else {
-                    builder
-                };
+                let mut builder = BrowserConfig::builder();
+                
+                // Set headless mode
+                if !headless {
+                    builder = builder.with_head();
+                }
+                
+                // Set sandbox
+                if !sandbox {
+                    builder = builder.no_sandbox();
+                }
+                
+                // Set user data dir (for profile loading)
+                if let Some(ref user_data) = user_data_path {
+                    info!("[Browser Thread] Using user data dir: {:?}", user_data);
+                    builder = builder.user_data_dir(user_data);
+                }
                 
                 match builder.build() {
                     Ok(config) => {

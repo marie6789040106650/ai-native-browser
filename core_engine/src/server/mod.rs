@@ -276,7 +276,8 @@ async fn browser_start_handler(
     
     // Launch browser - now synchronous!
     let cdp = state.cdp_client.clone();
-    let launch_result = cdp.launch(req.headless, req.sandbox);
+    let user_data_dir = req.user_data_dir.as_deref();
+    let launch_result = cdp.launch(req.headless, req.sandbox, user_data_dir);
     
     match launch_result {
         Ok(_) => {
