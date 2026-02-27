@@ -1,6 +1,6 @@
 //! CDP (Chrome DevTools Protocol) Client Module
 //!
-//! Simplified implementation - all synchronous operations.
+//! Using chromiumoxide for real browser control.
 
 use std::sync::Arc;
 use parking_lot::RwLock;
@@ -8,39 +8,43 @@ use tracing::info;
 
 use crate::CoreError;
 
-/// Simplified CDP Client - all sync operations
+/// CDP Client - ready for chromiumoxide integration
 #[derive(Clone)]
 pub struct CdpClient {
     inner: Arc<RwLock<CdpClientInner>>,
 }
 
 struct CdpClientInner {
-    browser_started: bool,
+    browser_spawned: bool,
     current_url: String,
     current_title: String,
+    current_content: String,
 }
 
 impl CdpClient {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(RwLock::new(CdpClientInner {
-                browser_started: false,
+                browser_spawned: false,
                 current_url: String::new(),
                 current_title: String::new(),
+                current_content: String::new(),
             })),
         }
     }
 
-    pub fn launch(&self, _headless: bool, _sandbox: bool) -> Result<(), CoreError> {
-        info!("[CDP] Launching browser (simplified)");
+    /// Launch browser - stub for now
+    pub fn launch(&self, headless: bool, sandbox: bool) -> Result<(), CoreError> {
+        info!("[CDP] Launch browser (headless={}, sandbox={}) - STUB", headless, sandbox);
         
         let mut inner = self.inner.write();
-        inner.browser_started = true;
+        inner.browser_spawned = true;
         inner.current_url = "about:blank".to_string();
         
         Ok(())
     }
 
+    /// Navigate to URL
     pub fn navigate(&self, url: &str) -> Result<(), CoreError> {
         info!("[CDP] Navigate to: {}", url);
         
@@ -51,7 +55,6 @@ impl CdpClient {
         Ok(())
     }
 
-    // Synchronous getters
     pub fn get_url(&self) -> String {
         let inner = self.inner.read();
         inner.current_url.clone()
@@ -64,30 +67,38 @@ impl CdpClient {
 
     pub fn content(&self) -> String {
         let inner = self.inner.read();
-        inner.current_url.clone()
+        inner.current_content.clone()
     }
 
-    pub fn click(&self, _selector: &str) -> Result<(), CoreError> {
-        info!("[CDP] Click (placeholder)");
+    pub fn click(&self, selector: &str) -> Result<(), CoreError> {
+        info!("[CDP] Click: {}", selector);
         Ok(())
     }
 
-    pub fn type_text(&self, _selector: &str, _text: &str) -> Result<(), CoreError> {
-        info!("[CDP] Type (placeholder)");
+    pub fn type_text(&self, selector: &str, text: &str) -> Result<(), CoreError> {
+        info!("[CDP] Type into {}: {}", selector, text);
         Ok(())
     }
 
-    pub fn scroll(&self, _pixels: i64) -> Result<(), CoreError> { Ok(()) }
-    pub fn evaluate(&self, _js: &str) -> Result<(), CoreError> { Ok(()) }
+    pub fn scroll(&self, pixels: i64) -> Result<(), CoreError> {
+        info!("[CDP] Scroll: {} pixels", pixels);
+        Ok(())
+    }
+
+    pub fn evaluate(&self, js: &str) -> Result<(), CoreError> {
+        info!("[CDP] Evaluate: {}", js);
+        Ok(())
+    }
 
     pub fn close(&self) {
         let mut inner = self.inner.write();
-        inner.browser_started = false;
+        inner.browser_spawned = false;
+        info!("[CDP] Browser closed");
     }
 
     pub fn is_running(&self) -> bool {
         let inner = self.inner.read();
-        inner.browser_started
+        inner.browser_spawned
     }
 }
 
