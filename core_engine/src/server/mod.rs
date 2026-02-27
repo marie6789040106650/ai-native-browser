@@ -218,8 +218,8 @@ async fn act_handler(
     
     // Get current page info
     let cdp = state.cdp_client.clone();
-    let url = cdp.get_url();
-    let title = cdp.get_title();
+    let _url = cdp.get_url();
+    let _title = cdp.get_title();
     
     // Notify inspector of DOM change
     let inspector = state.inspector.read();
@@ -279,8 +279,7 @@ async fn browser_start_handler(
     
     match launch_result {
         Ok(_) => {
-            // Update state
-            *state.cdp_client.clone() = cdp;
+            // Browser started successfully - cdp is already a clone
             *state.is_running.write() = true;
             
             // Reset inspector
