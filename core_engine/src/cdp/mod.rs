@@ -59,7 +59,16 @@ impl CdpClient {
         info!("Launching Chrome with remote debugging...");
         
         let browser_path = self.config.browser_path.clone()
-            .unwrap_or_else(|| "chrome".to_string());
+            .unwrap_or_else(|| "google-chrome".to_string());
+        
+        info!("Browser path: {}", browser_path);
+        
+        // Check if file exists
+        if !std::path::Path::new(&browser_path).exists() {
+            return Err(CoreError::Browser(format!(
+                "Browser not found at: {}", browser_path
+            )));
+        }
         
         let mut args = vec![
             format!("--remote-debugging-port={}", self.config.port),
@@ -86,7 +95,7 @@ impl CdpClient {
             .map_err(|e| CoreError::Browser(format!("Failed to launch Chrome: {}", e)))?;
         
         // Wait for Chrome to start
-        std::thread::sleep(std::time::Duration::from_secs(2));
+        std::thread::sleep(std::time::Duration::from_secs(3));
         
         // Get WebSocket endpoint
         let ws_endpoint = self.get_ws_endpoint()?;

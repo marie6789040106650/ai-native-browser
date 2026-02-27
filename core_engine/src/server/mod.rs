@@ -287,7 +287,7 @@ async fn browser_start_handler(
     let config = crate::cdp::BrowserConfig {
         headless: req.headless,
         user_data_dir: req.user_data_dir.clone(),
-        browser_path: None,
+        browser_path: state.config.browser_path.clone(),
         port: 9222,
     };
     

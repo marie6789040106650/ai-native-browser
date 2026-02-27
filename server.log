@@ -1,0 +1,17 @@
+[2m2026-02-27T09:37:36.079425Z[0m [32m INFO[0m [2mcore_server[0m[2m:[0m Starting AI Native Browser Core Engine Server...
+[2m2026-02-27T09:37:36.089374Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
+[2m2026-02-27T09:37:36.089430Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m AI Native Browser API Server
+[2m2026-02-27T09:37:36.089441Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Listening on: http://127.0.0.1:9222
+[2m2026-02-27T09:37:36.090038Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Endpoints:
+[2m2026-02-27T09:37:36.090051Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /health           - Health check
+[2m2026-02-27T09:37:36.090059Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/sense         - Get semantic page
+[2m2026-02-27T09:37:36.090067Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/act           - Perform action
+[2m2026-02-27T09:37:36.090076Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/human_bridge  - Human intervention
+[2m2026-02-27T09:37:36.090083Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/start - Start browser
+[2m2026-02-27T09:37:36.090091Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/stop  - Stop browser
+[2m2026-02-27T09:37:36.090099Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/status        - Get status
+[2m2026-02-27T09:37:36.090106Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
+[2m2026-02-27T09:37:46.700912Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m browser_start called: headless=false
+[2m2026-02-27T09:37:46.701373Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m Launching Chrome with remote debugging...
+[2m2026-02-27T09:37:46.706364Z[0m [31mERROR[0m [2mcore_engine::server[0m[2m:[0m Failed to start browser: Browser error: Failed to launch Chrome: No such file or directory (os error 2)
+[2m2026-02-27T09:37:46.706404Z[0m [31mERROR[0m [2mtower_http::trace::on_failure[0m[2m:[0m response failed [3mclassification[0m[2m=[0mStatus code: 500 Internal Server Error [3mlatency[0m[2m=[0m7 ms
