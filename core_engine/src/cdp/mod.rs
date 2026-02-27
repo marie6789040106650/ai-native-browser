@@ -172,7 +172,29 @@ impl CdpClient {
                                                 BrowserCmd::Navigate(url, resp) => {
                                                     match page.goto(&url).await {
                                                         Ok(_) => {
+                                                            // Wait for page to load
+                                                            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                                                            
+                                                            // Get title
                                                             let title = page.get_title().await.ok().flatten().unwrap_or_default();
+                                                            
+                                                            // Also fetch content for cache
+                                                            let content_params = EvaluateParams::builder()
+                                                                .expression("document.body.innerHTML")
+                                                                .build()
+                                                                .unwrap();
+                                                            if let Ok(result) = page.evaluate_expression(content_params).await {
+                                                                if let Some(html) = result.value() {
+                                                                    let html_str = html.to_string();
+                                                                    // Update shared cache
+                                                                    {
+                                                                        let mut cache = content_cache.write();
+                                                                        *cache = html_str.clone();
+                                                                    }
+                                                                    info!("[Browser Thread] Content cached, length: {}", html_str.len());
+                                                                }
+                                                            }
+                                                            
                                                             let _ = resp.send(Ok(title));
                                                         }
                                                         Err(e) => {
@@ -307,6 +329,10 @@ impl CdpClient {
             });
         }
         
+        // Give browser time to launch (simple approach)
+        // The browser thread will log when ready
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        
         // Update state
         {
             let mut inner = self.inner.write();
@@ -321,24 +347,38 @@ impl CdpClient {
     pub fn navigate(&self, url: &str) -> Result<(), CoreError> {
         info!("[CDP] Navigate to: {}", url);
         
-        let (resp_tx, _) = mpsc::channel(1);
+        let (resp_tx, mut resp_rx) = mpsc::channel(1);
         
         // Send command to browser thread
-        {
-            let handle = self.browser_handle.read();
-            if let Some(ref h) = *handle {
-                let cmd = BrowserCmd::Navigate(url.to_string(), resp_tx);
-                let _ = h.cmd_tx.try_send(cmd);
-            } else {
-                return Err(CoreError::Browser("Browser not running".to_string()));
+        let handle = self.browser_handle.read();
+        if let Some(ref h) = *handle {
+            let cmd = BrowserCmd::Navigate(url.to_string(), resp_tx);
+            match h.cmd_tx.try_send(cmd) {
+                Ok(()) => info!("[CDP] Navigate command sent"),
+                Err(e) => {
+                    error!("[CDP] Failed to send navigate command: {}", e);
+                    return Err(CoreError::Browser(format!("Failed to send command: {}", e)));
+                }
             }
+        } else {
+            return Err(CoreError::Browser("Browser not running".to_string()));
         }
+        drop(handle);
         
-        // Update state immediately (actual result comes async)
+        // Wait for response
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        
+        // Update state
         {
             let mut inner = self.inner.write();
             inner.current_url = url.to_string();
-            inner.current_title = "Loading...".to_string();
+            // Check cache for content
+            let cache = self.content_cache.read();
+            if !cache.is_empty() {
+                inner.current_title = "Loaded".to_string();
+            } else {
+                inner.current_title = "Loading...".to_string();
+            }
         }
         
         Ok(())
@@ -389,9 +429,9 @@ impl CdpClient {
         }
         drop(handle);
         
-        // Give browser thread time to respond (brief sleep)
+        // Give browser thread time to respond
         // This is a hack - proper solution would be async
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(500));
         
         // Read from shared cache (browser thread updates it)
         let cache = self.content_cache.read();

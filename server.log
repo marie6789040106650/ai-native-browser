@@ -1,17 +1,39 @@
-[2m2026-02-27T09:37:36.079425Z[0m [32m INFO[0m [2mcore_server[0m[2m:[0m Starting AI Native Browser Core Engine Server...
-[2m2026-02-27T09:37:36.089374Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
-[2m2026-02-27T09:37:36.089430Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m AI Native Browser API Server
-[2m2026-02-27T09:37:36.089441Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Listening on: http://127.0.0.1:9222
-[2m2026-02-27T09:37:36.090038Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Endpoints:
-[2m2026-02-27T09:37:36.090051Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /health           - Health check
-[2m2026-02-27T09:37:36.090059Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/sense         - Get semantic page
-[2m2026-02-27T09:37:36.090067Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/act           - Perform action
-[2m2026-02-27T09:37:36.090076Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/human_bridge  - Human intervention
-[2m2026-02-27T09:37:36.090083Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/start - Start browser
-[2m2026-02-27T09:37:36.090091Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/stop  - Stop browser
-[2m2026-02-27T09:37:36.090099Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/status        - Get status
-[2m2026-02-27T09:37:36.090106Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
-[2m2026-02-27T09:37:46.700912Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m browser_start called: headless=false
-[2m2026-02-27T09:37:46.701373Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m Launching Chrome with remote debugging...
-[2m2026-02-27T09:37:46.706364Z[0m [31mERROR[0m [2mcore_engine::server[0m[2m:[0m Failed to start browser: Browser error: Failed to launch Chrome: No such file or directory (os error 2)
-[2m2026-02-27T09:37:46.706404Z[0m [31mERROR[0m [2mtower_http::trace::on_failure[0m[2m:[0m response failed [3mclassification[0m[2m=[0mStatus code: 500 Internal Server Error [3mlatency[0m[2m=[0m7 ms
+[2m2026-02-27T16:15:06.946250Z[0m [32m INFO[0m [2mcore_server[0m[2m:[0m Starting AI Native Browser Core Engine Server...
+[2m2026-02-27T16:15:06.946589Z[0m [32m INFO[0m [2mcore_server[0m[2m:[0m Browser path: Some("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+[2m2026-02-27T16:15:06.947831Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
+[2m2026-02-27T16:15:06.947924Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m AI Native Browser API Server
+[2m2026-02-27T16:15:06.947953Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Listening on: http://127.0.0.1:9222
+[2m2026-02-27T16:15:06.947986Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Endpoints:
+[2m2026-02-27T16:15:06.948006Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /health           - Health check
+[2m2026-02-27T16:15:06.948024Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/sense         - Get semantic page
+[2m2026-02-27T16:15:06.948044Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/act           - Perform action
+[2m2026-02-27T16:15:06.948062Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/human_bridge  - Human intervention
+[2m2026-02-27T16:15:06.948083Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/start - Start browser
+[2m2026-02-27T16:15:06.948101Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   POST /v1/browser/stop  - Stop browser
+[2m2026-02-27T16:15:06.948119Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m   GET  /v1/status        - Get status
+[2m2026-02-27T16:15:06.948136Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m ===========================================
+[2m2026-02-27T16:15:08.264760Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m browser_start called: headless=true
+[2m2026-02-27T16:15:08.264854Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Launch browser (headless=true, sandbox=false, user_data_dir=Some("/var/folders/tn/gz3_g_3s46jcgs2kp0nmbcq40000gn/T/tmp.Z0GUvITCR9"))
+[2m2026-02-27T16:15:08.265269Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [Browser Thread] Using user data dir: "/var/folders/tn/gz3_g_3s46jcgs2kp0nmbcq40000gn/T/tmp.Z0GUvITCR9"
+[2m2026-02-27T16:15:10.571925Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [Browser Thread] Browser launched successfully
+[2m2026-02-27T16:15:11.265236Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Browser launch initiated
+[2m2026-02-27T16:15:11.265362Z[0m [32m INFO[0m [2mcore_engine::inspector[0m[2m:[0m Inspector state reset
+[2m2026-02-27T16:15:11.265399Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Browser started successfully
+[2m2026-02-27T16:15:11.298866Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m act endpoint: action=navigate, target_id=0, value=https://mail.zoho.com
+[2m2026-02-27T16:15:11.298939Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m Action: navigate value: https://mail.zoho.com
+[2m2026-02-27T16:15:11.298967Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Navigate to: https://mail.zoho.com
+[2m2026-02-27T16:15:11.299009Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Navigate command sent
+[2m2026-02-27T16:15:11.799154Z[0m [34mDEBUG[0m [2mcore_engine::inspector[0m[2m:[0m DOM mutated
+[2m2026-02-27T16:15:11.799219Z[0m [32m INFO[0m [2mcore_engine::inspector[0m[2m:[0m Inspector marked as ready
+[2m2026-02-27T16:15:14.924714Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense endpoint called
+[2m2026-02-27T16:15:14.924812Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Refreshing content from browser
+[2m2026-02-27T16:15:15.426085Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense returned: 0 nodes from https://mail.zoho.com
+[2m2026-02-27T16:15:34.397938Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense endpoint called
+[2m2026-02-27T16:15:34.398033Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Refreshing content from browser
+[2m2026-02-27T16:15:34.898768Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense returned: 0 nodes from https://mail.zoho.com
+[2m2026-02-27T16:15:35.940169Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense endpoint called
+[2m2026-02-27T16:15:35.940341Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Refreshing content from browser
+[2m2026-02-27T16:15:36.482651Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense returned: 0 nodes from https://mail.zoho.com
+[2m2026-02-27T16:15:37.517914Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense endpoint called
+[2m2026-02-27T16:15:37.518115Z[0m [32m INFO[0m [2mcore_engine::cdp[0m[2m:[0m [CDP] Refreshing content from browser
+[2m2026-02-27T16:15:38.019030Z[0m [32m INFO[0m [2mcore_engine::server[0m[2m:[0m sense returned: 0 nodes from https://mail.zoho.com
